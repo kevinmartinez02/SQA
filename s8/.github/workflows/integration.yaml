@@ -1,0 +1,30 @@
+name: Run unit tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 's8/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 's8/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: s8
+        run: npm ci
+
+      - name: Run tests
+        working-directory: s8
+        run: npm test -- test/**/*.spec.ts
