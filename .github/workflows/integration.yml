@@ -23,11 +23,15 @@ jobs:
       - name: Initialize DB
         run: cd s8 && docker compose up -d
 
-      - name: Add DATABASE_URL to .env file
+      - name: Charge .env file
         run: |
           cd s8
           echo DATABASE_URL="postgresql://postgres:postgres@db:5432/postgres" >> .env
-          
+          echo DB_HOST="db" >> .env
+          echo DB_PORT="5432" >> .env
+          echo DB_USER="postgres" >> .env
+          echo DB_PASSWORD="postgres" >> .env
+          echo DB_NAME="postgres" >> .env
       - name: Run Migration
         run: cd s8 && npm run prisma:migrate
 
