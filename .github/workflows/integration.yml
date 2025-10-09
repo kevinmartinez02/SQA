@@ -1,44 +1,32 @@
-name: Run test  - S8
-
-on:
-  push: 
-    branches:
-      - main
+name: CI
+on: [push]
 
 jobs:
-  test: 
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
+      - name: Set up Docker Compose
+        run: docker compose version
 
-      - name: Install dependencies
-        run: cd s8 && npm install
+      - name: Build images
+        run: docker compose build
 
-     
-      - name: Charge .env file
+      - name: Start stack
+        run: docker compose up -d
+
+      - name: Wait for API
         run: |
-          cd s8
-          echo DB_HOST="db" >> .env
-          echo DB_PORT="5432" >> .env
-          echo DB_USER="postgres" >> .env
-          echo DB_PASSWORD="postgres" >> .env
-          echo DB="postgres" >> .env
-        
-      - name: Initialize DB
-        run: cd s8 && docker compose up -d
+          for i in {1..60}; do
+            curl -sf http://localhost:3000/health && exit 0
+            sleep 2
+          done
+          echo "API not healthy" && exit 1
 
-
-      - name: Run Migration
-        run: cd s8 && npx knex migrate:latest
-
-      - name: Generate Migration
-        run: cd s8 && npx knex generate:migration
-        
       - name: Run tests
-        run: cd s8 && npm run test /test/*.spec.ts
+        run: npm run test /test/*.spec.ts
+
+      - name: Stop
+        if: always()
+        run: docker compose down -v
