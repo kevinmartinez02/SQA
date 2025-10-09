@@ -10,9 +10,12 @@ jobs:
       - name: Set up Docker Compose
         run: docker compose version
 
-
+      - name: charge .env
+        run: cd s8 && cp .env.example .env
+        
       - name: Start stack
         run: cd s8 && docker compose up -d
+
 
 
       - name: Run tests
