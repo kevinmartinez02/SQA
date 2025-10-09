@@ -12,14 +12,12 @@ jobs:
 
       - name: charge .env
         run: cd s8 && cp .env.example .env
-        
+
       - name: Start stack
         run: cd s8 && docker compose up -d
 
-
-
       - name: Run tests
-        run: cd s8 && npm run test /test/*.spec.ts
+        run: cd s8 && docker compose exec api npm run test /test/*.spec.ts
 
       - name: Stop
         if: always()
