@@ -12,19 +12,12 @@ jobs:
 
 
       - name: Start stack
-        run: docker compose up -d
+        run: cd s8 && docker compose up -d
 
-      - name: Wait for API
-        run: |
-          for i in {1..60}; do
-            curl -sf http://localhost:3000/health && exit 0
-            sleep 2
-          done
-          echo "API not healthy" && exit 1
 
       - name: Run tests
-        run: npm run test /test/*.spec.ts
+        run: cd s8 && npm run test /test/*.spec.ts
 
       - name: Stop
         if: always()
-        run: docker compose down -v
+        run: cd s8 && docker compose down -v
