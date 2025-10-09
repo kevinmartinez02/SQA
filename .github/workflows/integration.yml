@@ -26,7 +26,7 @@ jobs:
       - name: Charge .env file
         run: |
           cd s8
-          echo DATABASE_URL="postgresql://umg_test:test@localhost:5432/postgres" >> .env
+          echo DATABASE_URL="postgresql://postgres:postgres@db:5432/postgres" >> .env
           
       - name: Run Migration
         run: cd s8 && npm run prisma:migrate
