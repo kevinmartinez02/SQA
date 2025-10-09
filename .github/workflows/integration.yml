@@ -7,37 +7,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cargar .env
+      - name: Debug paths
+        run: |
+          pwd
+          ls -la
+          ls -la s8 || true
+
+      - name: Node & cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: s8/package-lock.json
+
+      - name: Copiar .env
         working-directory: s8
         run: cp .env.example .env
 
-      - name: Levantar Postgres con Compose (volumen nombrado)
+      - name: Levantar Postgres (volumen nombrado)
         working-directory: s8
         run: docker compose up -d db
 
-      - name: Esperar DB
+      - name: Instalar deps (limpia permisos si es necesario)
         run: |
-          for i in {1..40}; do
-            docker ps
-            docker exec $(docker ps -qf "name=s8-db-1") pg_isready -U postgres -d postgres && exit 0
-            sleep 3
-          done
-          exit 1
+          sudo rm -rf s8/node_modules || true
+          cd s8 && npm ci
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: s8/package-lock.json
-
-      - name: Fix permissions (si quedaron restos de root)
-        run: sudo rm -rf s8/node_modules
-
-      - name: Instalar dependencias
-        working-directory: s8
-        run: npm ci
-
-      - name: Run tests
+      - name: Tests
         working-directory: s8
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
