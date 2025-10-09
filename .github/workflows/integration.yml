@@ -16,6 +16,9 @@ jobs:
       - name: Start stack
         run: cd s8 && docker compose up -d
 
+      - name: install dependencies
+        run: cd s8 && npm install
+
       - name: Run tests
         run: cd s8 && npm run test 
 
