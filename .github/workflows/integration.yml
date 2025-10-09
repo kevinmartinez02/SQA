@@ -1,27 +1,14 @@
+name: Run unit tests
 
 on:
   push:
     branches: [main]
     paths:
-      - 'SQA/s8/**'
+      - 'week-5/**'
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -32,47 +19,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: SQA/s8/package-lock.json
+          cache-dependency-path: 'week-5/package-lock.json'
 
       - name: Install dependencies
-        working-directory: SQA/s8
+        working-directory: week-5
         run: npm ci
 
-      - name: Wait for Postgres
-        run: |
-          for i in {1..20}; do
-            if pg_isready -h localhost -p 5432 -U postgres; then
-              break
-            fi
-            sleep 2
-          done
-
-      - name: Run migrations
-        working-directory: SQA/s8
-        env:
-          DB_HOST: localhost
-          DB_PORT: '5432'
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: postgres
-        run: npx ts-node ./node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts
-
-      - name: Run seeds
-        working-directory: SQA/s8
-        env:
-          DB_HOST: localhost
-          DB_PORT: '5432'
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: postgres
-        run: npx ts-node ./node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts
-
       - name: Run tests
-        working-directory: SQA/s8
-        env:
-          DB_HOST: localhost
-          DB_PORT: '5432'
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: postgres
-        run: npm test -- test/*.spec.ts
+        working-directory: week-5
+        run: npm test -- test/brackets.test.ts test/isMultiple.test.ts
