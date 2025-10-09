@@ -23,7 +23,7 @@ jobs:
       - name: Initialize DB
         run: cd s8 && docker compose up -d
 
-      - name: Charge .env file
+      - name: Add DATABASE_URL to .env file
         run: |
           cd s8
           echo DATABASE_URL="postgresql://postgres:postgres@db:5432/postgres" >> .env
