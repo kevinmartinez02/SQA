@@ -17,7 +17,7 @@ jobs:
         run: cd s8 && docker compose up -d
 
       - name: Run tests
-        run: cd s8 && docker compose exec api npm run test /test/*.spec.ts
+        run: cd s8 && npm run test 
 
       - name: Stop
         if: always()
