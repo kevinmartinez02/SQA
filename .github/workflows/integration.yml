@@ -10,8 +10,6 @@ jobs:
       - name: Set up Docker Compose
         run: docker compose version
 
-      - name: Build images
-        run: docker compose build
 
       - name: Start stack
         run: docker compose up -d
