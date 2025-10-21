@@ -1,43 +1,50 @@
-name: CI
-on: [push]
+name: Run test - with git actions
+
+on: 
+  push: 
+    branches:
+      - main
+    paths:
+      - 'SQA/s8/**'
 
 jobs:
-  test:
+  test: 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: checkout code 
+        uses: actions/checkout@v4
 
-      - name: Node & cache
+      - name: Set up Node.js 
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: SQA/s8/package-lock.json
+          node-version: '20'
+          cache: 'npm'
+          package-manager-cache: false
+        
 
-      - name: Crear override de Compose para CI (sin bind mount)
-        working-directory: SQA/s8
-        run: |
-          cat > compose.override.ci.yaml <<'EOF'
-          services:
-            db:
-              volumes:
-                - pgdata:/var/lib/postgresql/data
-          volumes:
-            pgdata: {}
-          EOF
-
-      - name: Levantar Postgres (volumen nombrado)
-        working-directory: SQA/s8
-        run: docker compose -f compose.yaml -f compose.override.ci.yaml up -d db
-
-      - name: Instalar deps
+      - name: Install dependencies
         working-directory: SQA/s8
         run: npm ci
+      - name: Install Docker using Docker's official script
+        run: |
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sudo sh get-docker.sh
+        continue-on-error: false
 
-      - name: Instalar cliente de PostgreSQL
+      - name: Install Docker Compose
+        working-directory: SQA/s8
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+        continue-on-error: false
+
+      - name: Start only Postgres with Docker Compose
+        working-directory: SQA/s8
+        run: docker compose -f compose.yaml -f compose.override.ci.yaml up -d db 
+      - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
-      - name: Esperar a que Postgres esté listo
+      - name: Wait for Postgres
         run: |
           for i in {1..30}; do
             if pg_isready -h localhost -p 5432 -U postgres; then
@@ -46,7 +53,7 @@ jobs:
             sleep 2
           done
 
-      - name: Ejecutar migraciones
+      - name: Run migrations
         working-directory: SQA/s8
         env:
           DB_HOST: localhost
@@ -54,10 +61,9 @@ jobs:
           DB_USER: postgres
           DB_PASSWORD: postgres
           DB_NAME: postgres
-          DB: postgres
         run: npx ts-node ./node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts
 
-      - name: Ejecutar seeds
+      - name: Run seeds
         working-directory: SQA/s8
         env:
           DB_HOST: localhost
@@ -65,10 +71,9 @@ jobs:
           DB_USER: postgres
           DB_PASSWORD: postgres
           DB_NAME: postgres
-          DB: postgres
         run: npx ts-node ./node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts
 
-      - name: Tests
+      - name: Run tests and coverage
         working-directory: SQA/s8
         env:
           DB_HOST: localhost
@@ -76,11 +81,9 @@ jobs:
           DB_USER: postgres
           DB_PASSWORD: postgres
           DB_NAME: postgres
-          DB: postgres
-          CI: true
-        run: npm run test
+        run: npm run test -- --coverage
 
-      - name: Down
+      - name: Stop DB
         if: always()
         working-directory: SQA/s8
         run: docker compose -f compose.yaml -f compose.override.ci.yaml down -v
