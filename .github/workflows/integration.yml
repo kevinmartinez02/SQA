@@ -15,9 +15,16 @@ jobs:
         
       - name: Start stack
         run: cd s8 && docker compose up -d
-      
+      - name: Wait for Database
+        run: |
+          for i in {1..30}; do
+            if docker exec -t $(docker ps -q -f name=db) pg_isready -U postgres; then
+              break
+            fi
+            sleep 2
+          done
+          
       - name: run migrations 
-
         run: cd s8 && npx knex migrate:latest --knexfile knexfile.ts
       - name: run seeds
         run: cd s8 && npx knex seed:run --knexfile knexfile.ts
