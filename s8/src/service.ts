@@ -19,7 +19,13 @@ const getProduct = async (id: number) => {
     if (!product) {
         return [];
     }
-    return product;
+    const mappedProduct = {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: Number(product.price)
+    }
+    return mappedProduct;
    } catch (error) {
     return false;
    }

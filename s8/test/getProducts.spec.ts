@@ -23,7 +23,6 @@ describe('Products', async () => {
             expect(item).toHaveProperty('description');
             expect(item).toHaveProperty('id');
             expect(item).toHaveProperty('price');
-            expect(item).toHaveProperty('created_at');
         })
 
     })

@@ -10,7 +10,7 @@ interface Product {
 describe('Products', async () => {
     it('should return a product', async () => {
         const result = await getProduct(1);
-
+       
         expect(result).toMatchObject({
             id: expect.any(Number),
             name: expect.any(String),

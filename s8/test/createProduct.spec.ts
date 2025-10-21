@@ -3,7 +3,7 @@ import { createProduct } from "../src/service";
 
 describe('Create Product', async () => {
     it('should create a product', async () => {
-        const product = await createProduct({ name: 'Product 45', description: 'prueba', price: 100.00});
+        const product = await createProduct({ name: 'Product 45', description: 'prueba', price: 100.00,});
         expect(product).toMatchObject({
             id: expect.any(Number),
             name: expect.any(String),
