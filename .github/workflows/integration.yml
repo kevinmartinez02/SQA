@@ -42,7 +42,7 @@ jobs:
         run: cd s8 && npx knex seed:run --knexfile knexfile.ts
 
       - name: Run tests
-        run: cd s8 && npm run test /test/*.spec.ts
+        run: cd s8 && npm run test -- test/*.spec.ts
 
       - name: Stop
         if: always()
