@@ -1,48 +1,45 @@
-name: Run test - with git actions
+name: Run test - s8
 
 on: 
   push: 
     branches:
       - main
-
+  
 jobs:
-  test: 
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout code 
+ 
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          package-manager-cache: 'npm'
-          cache-dependency-path: ./SQA/s8/package-lock.json
+          cache-dependency-path: 'SQA/s8/package-lock.json'
 
-      - name: Install dependencies
+      - name: install dependencies
         working-directory: SQA/s8
         run: npm ci
-      - name: Install Docker using Docker's official script
+      - name: install docker 
         run: |
           curl -fsSL https://get.docker.com -o get-docker.sh
           sudo sh get-docker.sh
-        continue-on-error: false
-
-      - name: Install Docker Compose
-        working-directory: SQA/s8
+          continue-on-error: false
+      - name: install docker compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
-        continue-on-error: false
-
-      - name: Start only Postgres with Docker Compose
+          continue-on-error: false
+      - name: start only postgres with docker compose
         working-directory: SQA/s8
         run: docker compose -f compose.yaml -f compose.override.ci.yaml up -d db 
-      - name: Install PostgreSQL client
+      - name: install postgresql client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Wait for Postgres
+      - name: wait for postgres
         run: |
           for i in {1..30}; do
             if pg_isready -h localhost -p 5432 -U postgres; then
@@ -51,7 +48,7 @@ jobs:
             sleep 2
           done
 
-      - name: Run migrations
+      - name: run migration script
         working-directory: SQA/s8
         env:
           DB_HOST: localhost
@@ -60,8 +57,7 @@ jobs:
           DB_PASSWORD: postgres
           DB_NAME: postgres
         run: npx ts-node ./node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts
-
-      - name: Run seeds
+      - name: run seed script
         working-directory: SQA/s8
         env:
           DB_HOST: localhost
@@ -70,8 +66,7 @@ jobs:
           DB_PASSWORD: postgres
           DB_NAME: postgres
         run: npx ts-node ./node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts
-
-      - name: Run tests and coverage
+      - name: run tests and coverage
         working-directory: SQA/s8
         env:
           DB_HOST: localhost
@@ -80,8 +75,7 @@ jobs:
           DB_PASSWORD: postgres
           DB_NAME: postgres
         run: npm run test -- --coverage
-
-      - name: Stop DB
+      - name: stop db
         if: always()
         working-directory: SQA/s8
         run: docker compose -f compose.yaml -f compose.override.ci.yaml down -v
