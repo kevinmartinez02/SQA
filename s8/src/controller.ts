@@ -9,7 +9,6 @@ const tasks = [
   { id: 2, title: "Task 2", description: "Task 2 description" },
   { id: 3, title: "Task 3", description: "Task 3 description" },
 ];
-
 export const getAllTask = (req: Request, res: Response) => {
   res.json(tasks);
 };
