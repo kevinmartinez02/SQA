@@ -7,39 +7,80 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Debug paths
-        run: |
-          pwd
-          ls -la
-          ls -la s8 || true
-
       - name: Node & cache
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: s8/package-lock.json
+          cache-dependency-path: SQA/s8/package-lock.json
 
-      - name: Copiar .env
-        working-directory: s8
-        run: cp .env.example .env
-      - name: Levantar Postgres (volumen nombrado)
-        working-directory: s8
-        run: docker compose up -d db
-
-      - name: Instalar deps (limpia permisos si es necesario)
+      - name: Crear override de Compose para CI (sin bind mount)
+        working-directory: SQA/s8
         run: |
-          sudo rm -rf s8/node_modules || true
-          cd s8 && npm ci
+          cat > compose.override.ci.yaml <<'EOF'
+          services:
+            db:
+              volumes:
+                - pgdata:/var/lib/postgresql/data
+          volumes:
+            pgdata: {}
+          EOF
+
+      - name: Levantar Postgres (volumen nombrado)
+        working-directory: SQA/s8
+        run: docker compose -f compose.yaml -f compose.override.ci.yaml up -d db
+
+      - name: Instalar deps
+        working-directory: SQA/s8
+        run: npm ci
+
+      - name: Instalar cliente de PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Esperar a que Postgres esté listo
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Ejecutar migraciones
+        working-directory: SQA/s8
+        env:
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: postgres
+          DB: postgres
+        run: npx ts-node ./node_modules/knex/bin/cli.js migrate:latest --knexfile knexfile.ts
+
+      - name: Ejecutar seeds
+        working-directory: SQA/s8
+        env:
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: postgres
+          DB: postgres
+        run: npx ts-node ./node_modules/knex/bin/cli.js seed:run --knexfile knexfile.ts
 
       - name: Tests
-        working-directory: s8
+        working-directory: SQA/s8
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: postgres
+          DB: postgres
           CI: true
         run: npm run test
 
       - name: Down
         if: always()
-        working-directory: s8
-        run: docker compose down -v
+        working-directory: SQA/s8
+        run: docker compose -f compose.yaml -f compose.override.ci.yaml down -v
