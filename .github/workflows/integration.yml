@@ -23,7 +23,6 @@ jobs:
       - name: Copiar .env
         working-directory: s8
         run: cp .env.example .env
-
       - name: Levantar Postgres (volumen nombrado)
         working-directory: s8
         run: docker compose up -d db
