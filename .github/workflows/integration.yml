@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'SQA/s8/**'
-  
 jobs:
   test:
     runs-on: ubuntu-latest
